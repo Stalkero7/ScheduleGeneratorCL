@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 
 function App() {
+  // Cambiar el título de la pestaña del navegador
+  useEffect(() => {
+    document.title = 'generadorhorarios';
+  }, []);
+  
   // ===========================================
   // ESTADOS PRINCIPALES - DATOS DEL SISTEMA
   // ===========================================
-  useEffect(() => {
-    document.title = 'generadorhorarios';  // ← Este es el título
-  }, []);
+  
   // PROFESORES: Estructura completa con bloqueos de horario
   // { id, nombre, asignaturas: [], cursos: [], horasContrato, nivel: 'basica'|'media'|'ambos', 
   //   bloqueosHorario: [{dia, bloque}], horarioAsignado: {} }
@@ -88,6 +91,13 @@ function App() {
   const [mostrarModal, setMostrarModal] = useState(null); // nuevo-docente | nuevo-curso | editar-config | etc
   const [busqueda, setBusqueda] = useState('');
   const [tabConfigActivo, setTabConfigActivo] = useState('basica'); // Para tabs de configuración Básica/Media
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false); // Para menú móvil
+  
+  // Función helper: cambiar sección y cerrar menú móvil
+  const cambiarSeccion = (seccion) => {
+    setSeccionActual(seccion);
+    setMenuMovilAbierto(false); // Cerrar menú en móvil
+  };
   // Formularios temporales
   const [formDocente, setFormDocente] = useState({
     nombre: '',
@@ -659,9 +669,23 @@ function App() {
     <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
       
       {/* ============================================= */}
+      {/* BOTÓN HAMBURGUESA (solo visible en móvil) */}
+      {/* ============================================= */}
+      <button
+        onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
+        className="lg:hidden fixed top-4 left-4 z-50 bg-blue-600 text-white p-3 rounded-lg shadow-lg"
+      >
+        {menuMovilAbierto ? '✕' : '☰'}
+      </button>
+      
+      {/* ============================================= */}
       {/* BARRA LATERAL DE NAVEGACIÓN */}
       {/* ============================================= */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <aside className={`
+        w-64 bg-white border-r border-gray-200 flex flex-col
+        fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300
+        ${menuMovilAbierto ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         {/* Logo/Header */}
         <div className="p-6 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-900">HorarioCL</h1>
@@ -671,7 +695,7 @@ function App() {
         {/* Menú de navegación */}
         <nav className="flex-1 p-4">
           <button
-            onClick={() => setSeccionActual('docentes')}
+            onClick={() => cambiarSeccion('docentes')}
             className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition-colors ${
               seccionActual === 'docentes'
                 ? 'bg-blue-600 text-white font-semibold'
@@ -682,7 +706,7 @@ function App() {
           </button>
           
           <button
-            onClick={() => setSeccionActual('asignaturas')}
+            onClick={() => cambiarSeccion('asignaturas')}
             className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition-colors ${
               seccionActual === 'asignaturas'
                 ? 'bg-blue-600 text-white font-semibold'
@@ -693,7 +717,7 @@ function App() {
           </button>
           
           <button
-            onClick={() => setSeccionActual('cursos')}
+            onClick={() => cambiarSeccion('cursos')}
             className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition-colors ${
               seccionActual === 'cursos'
                 ? 'bg-blue-600 text-white font-semibold'
@@ -704,7 +728,7 @@ function App() {
           </button>
           
           <button
-            onClick={() => setSeccionActual('generador')}
+            onClick={() => cambiarSeccion('generador')}
             className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition-colors ${
               seccionActual === 'generador'
                 ? 'bg-blue-600 text-white font-semibold'
@@ -717,7 +741,7 @@ function App() {
           <div className="my-4 border-t border-gray-200"></div>
           
           <button
-            onClick={() => setSeccionActual('config-horario')}
+            onClick={() => cambiarSeccion('config-horario')}
             className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
               seccionActual === 'config-horario'
                 ? 'bg-blue-600 text-white font-semibold'
@@ -738,22 +762,30 @@ function App() {
         </div>
       </aside>
       
+      {/* Overlay para cerrar menú en móvil */}
+      {menuMovilAbierto && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setMenuMovilAbierto(false)}
+        />
+      )}
+      
       {/* ============================================= */}
       {/* CONTENIDO PRINCIPAL */}
       {/* ============================================= */}
-      <main className="flex-1 overflow-auto bg-gray-50">
+      <main className="flex-1 overflow-auto bg-gray-50 lg:ml-0 ml-0 pt-16 lg:pt-0">
         
         {/* SECCIÓN: DOCENTES */}
         {seccionActual === 'docentes' && (
-          <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
+          <div className="p-4 lg:p-8">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Gestión de Docentes</h2>
                 <p className="text-sm text-gray-500 mt-1">Administra la planta docente del establecimiento</p>
               </div>
               <button
                 onClick={() => setMostrarModal('nuevo-docente')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors w-full lg:w-auto"
               >
                 + Nuevo Docente
               </button>
@@ -770,8 +802,8 @@ function App() {
               />
             </div>
             
-            {/* Lista de docentes */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            {/* Lista de docentes - Vista de tabla en desktop */}
+            <div className="hidden lg:block bg-white rounded-lg border border-gray-200 overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -827,20 +859,86 @@ function App() {
                 </div>
               )}
             </div>
+            
+            {/* Vista de tarjetas en móvil */}
+            <div className="lg:hidden space-y-4">
+              {profesores
+                .filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+                .map(prof => (
+                  <div key={prof.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-lg">{prof.nombre}</h3>
+                        <span className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded ${
+                          prof.nivel === 'basica' ? 'bg-green-100 text-green-800' :
+                          prof.nivel === 'media' ? 'bg-purple-100 text-purple-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {prof.nivel === 'basica' ? 'Básica' : prof.nivel === 'media' ? 'Media' : 'Ambos'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setItemSeleccionado(prof);
+                          setMostrarModal('perfil-docente');
+                        }}
+                        className="text-blue-600 hover:text-blue-800 font-semibold text-sm"
+                      >
+                        Ver →
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Asignaturas:</span>
+                        <p className="text-gray-900">{prof.asignaturas.join(', ') || 'Sin asignaturas'}</p>
+                      </div>
+                      <div className="flex gap-4">
+                        <div>
+                          <span className="text-gray-500">Horas:</span>
+                          <span className="text-gray-900 ml-1 font-semibold">{prof.horasContrato}h</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Cursos:</span>
+                          <span className="text-gray-900 ml-1 font-semibold">
+                            {prof.cursos.length === 0 ? 'Todos' : prof.cursos.length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={() => eliminarProfesor(prof.id)}
+                        className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                
+              {profesores.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <div className="text-4xl mb-2">👨‍🏫</div>
+                  <div>No hay docentes registrados</div>
+                </div>
+              )}
+            </div>
           </div>
         )}
         
         {/* SECCIÓN: ASIGNATURAS */}
         {seccionActual === 'asignaturas' && (
-          <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
+          <div className="p-4 lg:p-8">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Gestión de Asignaturas</h2>
                 <p className="text-sm text-gray-500 mt-1">Administra las asignaturas disponibles</p>
               </div>
               <button
                 onClick={() => setMostrarModal('nueva-asignatura')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors w-full lg:w-auto"
               >
                 + Nueva Asignatura
               </button>
@@ -875,13 +973,13 @@ function App() {
         
         {/* SECCIÓN: CURSOS */}
         {seccionActual === 'cursos' && (
-          <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
+          <div className="p-4 lg:p-8">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Gestión de Cursos</h2>
                 <p className="text-sm text-gray-500 mt-1">Configura los cursos del establecimiento</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => cargarCursosRapido('basica')}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
@@ -903,7 +1001,7 @@ function App() {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {cursos.map(curso => (
                 <div key={curso.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative group">
                   <button
@@ -951,22 +1049,22 @@ function App() {
         
         {/* SECCIÓN: GENERADOR */}
         {seccionActual === 'generador' && (
-          <div className="p-8">
+          <div className="p-4 lg:p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Generador de Horarios</h2>
               <p className="text-sm text-gray-500 mt-1">Genera horarios automáticamente para todos los cursos</p>
             </div>
             
             {!horariosGenerados ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <div className="text-6xl mb-4">⚡</div>
-                <h3 className="text-xl font-bold mb-2">Listo para generar</h3>
-                <p className="text-gray-600 mb-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 lg:p-8 text-center">
+                <div className="text-4xl lg:text-6xl mb-4">⚡</div>
+                <h3 className="text-lg lg:text-xl font-bold mb-2">Listo para generar</h3>
+                <p className="text-gray-600 mb-6 text-sm lg:text-base">
                   Se generarán horarios para {cursos.length} cursos con {profesores.length} profesores
                 </p>
                 <button
                   onClick={generarHorarios}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold text-lg transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 lg:px-8 py-2 lg:py-3 rounded-lg font-bold text-base lg:text-lg transition-colors w-full sm:w-auto"
                 >
                   🚀 Generar Horarios
                 </button>
@@ -1061,12 +1159,10 @@ function App() {
         
         {/* SECCIÓN: CONFIGURACIÓN DE HORARIO */}
         {seccionActual === 'config-horario' && (
-          <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Configuración de Horario</h2>
-                <p className="text-sm text-gray-500 mt-1">Configura los horarios de jornada, bloques y recreos</p>
-              </div>
+          <div className="p-4 lg:p-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Configuración de Horario</h2>
+              <p className="text-sm text-gray-500 mt-1">Configura los horarios de jornada, bloques y recreos</p>
             </div>
             
             {/* Detectar niveles */}
