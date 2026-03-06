@@ -24,16 +24,47 @@ function App() {
   
   // CONFIGURACIÓN GLOBAL DE HORARIO (puede ser sobreescrita por curso)
   const [configGlobal, setConfigGlobal] = useState({
-    // Horario mañana
+    // Configuración diferenciada por nivel
+    usarConfigDiferenciada: false, // Si false, ambos usan la misma config
+    
+    // Configuración para Básica
+    basica: {
+      horaInicioManana: "08:00",
+      horaTerminoManana: "13:30",
+      tieneTarde: false,
+      horaInicioTarde: "14:30",
+      horaTerminoTarde: "17:00",
+      duracionBloque: 45,
+      recreos: [
+        { nombre: "Recreo 1", despuesBloque: 2, duracion: 15 },
+        { nombre: "Recreo 2 (Colación)", despuesBloque: 4, duracion: 30 }
+      ],
+      diasSemana: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+    },
+    
+    // Configuración para Media
+    media: {
+      horaInicioManana: "08:00",
+      horaTerminoManana: "13:30",
+      tieneTarde: true,
+      horaInicioTarde: "14:30",
+      horaTerminoTarde: "17:00",
+      duracionBloque: 45,
+      recreos: [
+        { nombre: "Recreo 1", despuesBloque: 2, duracion: 15 },
+        { nombre: "Recreo 2 (Colación)", despuesBloque: 4, duracion: 30 },
+        { nombre: "Recreo 3", despuesBloque: 6, duracion: 15 }
+      ],
+      diasSemana: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+    },
+    
+    // Horario mañana (para compatibilidad con config única)
     horaInicioManana: "08:00",
     horaTerminoManana: "13:30",
-    // Horario tarde (si aplica)
     tieneTarde: false,
     horaInicioTarde: "14:30",
     horaTerminoTarde: "17:00",
-    // Bloques
-    duracionBloque: 45, // minutos (hora pedagógica)
-    // Recreos
+    duracionBloque: 45,
     recreos: [
       { nombre: "Recreo 1", despuesBloque: 2, duracion: 15 },
       { nombre: "Recreo 2 (Colación)", despuesBloque: 4, duracion: 30 },
@@ -243,6 +274,22 @@ function App() {
         "Orientación": 1
       };
     }
+  };
+  
+  // Obtener configuración de horario para un curso específico
+  const obtenerConfigCurso = (curso) => {
+    // Si el curso tiene configuración personalizada, usar esa
+    if (curso.configuracionCustom && curso.configuracionHorario) {
+      return curso.configuracionHorario;
+    }
+    
+    // Si hay configuración diferenciada por nivel
+    if (configGlobal.usarConfigDiferenciada) {
+      return curso.nivel === 'basica' ? configGlobal.basica : configGlobal.media;
+    }
+    
+    // Si no, usar configuración global única
+    return configGlobal;
   };
   
   const actualizarMallaCurso = (cursoId, asignatura, horas) => {
@@ -689,14 +736,25 @@ function App() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {asignaturas.map((asig, idx) => (
-                <div key={idx} className="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition-shadow">
-                  <span className="font-semibold text-gray-900">{asig}</span>
-                  <button
-                    onClick={() => eliminarAsignatura(asig)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Eliminar
-                  </button>
+                <div key={idx} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start gap-3">
+                    <input
+                      type="text"
+                      value={asig}
+                      onChange={(e) => {
+                        const nuevasAsignaturas = [...asignaturas];
+                        nuevasAsignaturas[idx] = e.target.value;
+                        setAsignaturas(nuevasAsignaturas);
+                      }}
+                      className="flex-1 font-semibold text-gray-900 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none px-1 py-1"
+                    />
+                    <button
+                      onClick={() => eliminarAsignatura(asig)}
+                      className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -736,39 +794,46 @@ function App() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {cursos.map(curso => (
                 <div key={curso.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative group">
-                  {/* Botón eliminar */}
                   <button
                     onClick={() => eliminarCurso(curso.id)}
                     className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                    title="Eliminar curso"
                   >
                     ✕
                   </button>
-                  
                   <div className="mb-2">
                     <div className="font-bold text-gray-900">{curso.nombre}</div>
-                    <div className="text-xs text-gray-500">{curso.nivel === 'basica' ? 'Básica' : 'Media'}</div>
+                    <div className="text-xs flex items-center gap-1 mt-1">
+                      <span className={`px-2 py-0.5 rounded font-bold ${
+                        curso.nivel === 'basica' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {curso.nivel === 'basica' ? 'Básica' : 'Media'}
+                      </span>
+                      {curso.configuracionCustom && (
+                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold text-[10px]">
+                          Horario Custom
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-sm text-gray-600 mb-3">
-                    {Object.keys(curso.malla).length} asignaturas
+                    {Object.keys(curso.malla).length} asignaturas • {Object.values(curso.malla).reduce((a, b) => a + b, 0)}h
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => setItemSeleccionado(curso)}
-                      className="flex-1 bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-semibold hover:bg-blue-100"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => clonarCurso(curso.id)}
-                      className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-semibold hover:bg-gray-200"
-                    >
-                      Clonar
-                    </button>
+                    <button onClick={() => setItemSeleccionado(curso)} className="flex-1 bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-semibold hover:bg-blue-100">Editar</button>
+                    <button onClick={() => clonarCurso(curso.id)} className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-semibold hover:bg-gray-200">Clonar</button>
                   </div>
                 </div>
               ))}
             </div>
+            
+            {cursos.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-4xl mb-2">🏫</div>
+                <div>No hay cursos creados</div>
+              </div>
+            )}
           </div>
         )}
         
@@ -873,215 +938,348 @@ function App() {
         )}
         
         {/* MODAL: Configuración de Horario */}
-        {mostrarModal === 'config-horario' && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <h3 className="text-xl font-bold mb-4">⚙️ Configuración de Horario del Colegio</h3>
-              
-              <div className="space-y-6">
-                {/* Horario de Mañana */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-bold mb-3 text-gray-900">📅 Jornada de Mañana</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold mb-1">Hora de Inicio</label>
-                      <input
-                        type="time"
-                        value={configGlobal.horaInicioManana}
-                        onChange={(e) => setConfigGlobal({...configGlobal, horaInicioManana: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold mb-1">Hora de Término</label>
-                      <input
-                        type="time"
-                        value={configGlobal.horaTerminoManana}
-                        onChange={(e) => setConfigGlobal({...configGlobal, horaTerminoManana: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
+        {mostrarModal === 'config-horario' && (() => {
+          // Detectar qué niveles existen
+          const hayBasica = cursos.some(c => c.nivel === 'basica');
+          const hayMedia = cursos.some(c => c.nivel === 'media');
+          const hayAmbos = hayBasica && hayMedia;
+          
+          const [tabActivo, setTabActivo] = useState(hayBasica ? 'basica' : 'media');
+          
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+                <h3 className="text-xl font-bold mb-2">⚙️ Configuración de Horario del Colegio</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Configura los horarios de entrada, salida, bloques y recreos
+                </p>
                 
-                {/* Horario de Tarde (Opcional) */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-gray-900">🌆 Jornada de Tarde (Opcional)</h4>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                {/* Opción de diferenciación solo si hay ambos niveles */}
+                {hayAmbos && (
+                  <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={configGlobal.tieneTarde}
-                        onChange={(e) => setConfigGlobal({...configGlobal, tieneTarde: e.target.checked})}
-                        className="rounded"
+                        checked={configGlobal.usarConfigDiferenciada}
+                        onChange={(e) => setConfigGlobal({...configGlobal, usarConfigDiferenciada: e.target.checked})}
+                        className="rounded w-5 h-5"
                       />
-                      <span className="text-sm font-semibold">Habilitar</span>
+                      <div>
+                        <div className="font-bold text-yellow-900">Usar horarios diferentes para Básica y Media</div>
+                        <div className="text-xs text-yellow-700">Ejemplo: Básica sale a las 13:30, Media a las 17:00</div>
+                      </div>
                     </label>
                   </div>
-                  
-                  {configGlobal.tieneTarde && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Hora de Inicio</label>
-                        <input
-                          type="time"
-                          value={configGlobal.horaInicioTarde}
-                          onChange={(e) => setConfigGlobal({...configGlobal, horaInicioTarde: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Hora de Término</label>
-                        <input
-                          type="time"
-                          value={configGlobal.horaTerminoTarde}
-                          onChange={(e) => setConfigGlobal({...configGlobal, horaTerminoTarde: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
                 
-                {/* Duración de Bloques */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-bold mb-3 text-gray-900">⏱️ Duración de Bloque (Hora Pedagógica)</h4>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="number"
-                      min="30"
-                      max="90"
-                      step="5"
-                      value={configGlobal.duracionBloque}
-                      onChange={(e) => setConfigGlobal({...configGlobal, duracionBloque: parseInt(e.target.value)})}
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold"
-                    />
-                    <span className="text-sm text-gray-600">minutos por bloque</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">Recomendado: 45 minutos (estándar en Chile)</p>
-                </div>
-                
-                {/* Recreos */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-bold text-gray-900">☕ Recreos</h4>
+                {/* Tabs si está diferenciado y hay ambos niveles */}
+                {configGlobal.usarConfigDiferenciada && hayAmbos && (
+                  <div className="flex gap-2 mb-6 border-b border-gray-200">
                     <button
-                      onClick={() => setConfigGlobal({
-                        ...configGlobal,
-                        recreos: [...configGlobal.recreos, { nombre: `Recreo ${configGlobal.recreos.length + 1}`, despuesBloque: configGlobal.recreos.length + 2, duracion: 15 }]
-                      })}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                      onClick={() => setTabActivo('basica')}
+                      className={`px-6 py-3 font-bold transition-colors ${
+                        tabActivo === 'basica'
+                          ? 'border-b-2 border-green-600 text-green-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
                     >
-                      + Agregar Recreo
+                      🟢 Básica
+                    </button>
+                    <button
+                      onClick={() => setTabActivo('media')}
+                      className={`px-6 py-3 font-bold transition-colors ${
+                        tabActivo === 'media'
+                          ? 'border-b-2 border-purple-600 text-purple-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      🔵 Media
                     </button>
                   </div>
-                  
-                  <div className="space-y-3">
-                    {configGlobal.recreos.map((recreo, idx) => (
-                      <div key={idx} className="bg-gray-50 p-3 rounded-lg flex items-center gap-3">
-                        <input
-                          type="text"
-                          value={recreo.nombre}
-                          onChange={(e) => {
-                            const nuevosRecreos = [...configGlobal.recreos];
-                            nuevosRecreos[idx].nombre = e.target.value;
-                            setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
-                          }}
-                          placeholder="Nombre del recreo"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                        />
-                        
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600">Después del bloque:</span>
-                          <input
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={recreo.despuesBloque}
-                            onChange={(e) => {
-                              const nuevosRecreos = [...configGlobal.recreos];
-                              nuevosRecreos[idx].despuesBloque = parseInt(e.target.value);
-                              setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
-                            }}
-                            className="w-16 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center text-sm"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="5"
-                            max="60"
-                            step="5"
-                            value={recreo.duracion}
-                            onChange={(e) => {
-                              const nuevosRecreos = [...configGlobal.recreos];
-                              nuevosRecreos[idx].duracion = parseInt(e.target.value);
-                              setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
-                            }}
-                            className="w-16 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center text-sm"
-                          />
-                          <span className="text-xs text-gray-600">min</span>
-                        </div>
-                        
-                        <button
-                          onClick={() => {
-                            setConfigGlobal({
-                              ...configGlobal,
-                              recreos: configGlobal.recreos.filter((_, i) => i !== idx)
-                            });
-                          }}
-                          className="text-red-600 hover:text-red-800 p-2"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                )}
                 
-                {/* Vista previa de bloques */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-bold text-blue-900 mb-2">📊 Vista Previa</h4>
-                  <div className="text-sm text-blue-800">
-                    <div className="mb-1">
-                      <strong>Bloques totales por día:</strong> {calcularBloquesTotales(configGlobal)} bloques
+                {/* Formulario de configuración */}
+                {(() => {
+                  // Determinar qué configuración mostrar
+                  let config, setConfig;
+                  
+                  if (!configGlobal.usarConfigDiferenciada) {
+                    // Configuración única
+                    config = configGlobal;
+                    setConfig = setConfigGlobal;
+                  } else {
+                    // Configuración diferenciada
+                    config = configGlobal[tabActivo];
+                    setConfig = (cambios) => {
+                      setConfigGlobal({
+                        ...configGlobal,
+                        [tabActivo]: { ...configGlobal[tabActivo], ...cambios }
+                      });
+                    };
+                  }
+                  
+                  return (
+                    <div className="space-y-6">
+                      {/* Jornada de Mañana */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-bold mb-3 text-gray-900">📅 Jornada de Mañana</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold mb-1">Hora de Entrada</label>
+                            <input
+                              type="time"
+                              value={config.horaInicioManana}
+                              onChange={(e) => {
+                                if (!configGlobal.usarConfigDiferenciada) {
+                                  setConfigGlobal({...configGlobal, horaInicioManana: e.target.value});
+                                } else {
+                                  setConfig({ horaInicioManana: e.target.value });
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1">Hora de Salida</label>
+                            <input
+                              type="time"
+                              value={config.horaTerminoManana}
+                              onChange={(e) => {
+                                if (!configGlobal.usarConfigDiferenciada) {
+                                  setConfigGlobal({...configGlobal, horaTerminoManana: e.target.value});
+                                } else {
+                                  setConfig({ horaTerminoManana: e.target.value });
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Jornada de Tarde */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-gray-900">🌆 Jornada de Tarde (Opcional)</h4>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={config.tieneTarde}
+                              onChange={(e) => {
+                                if (!configGlobal.usarConfigDiferenciada) {
+                                  setConfigGlobal({...configGlobal, tieneTarde: e.target.checked});
+                                } else {
+                                  setConfig({ tieneTarde: e.target.checked });
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <span className="text-sm font-semibold">Habilitar</span>
+                          </label>
+                        </div>
+                        
+                        {config.tieneTarde && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-semibold mb-1">Hora de Entrada</label>
+                              <input
+                                type="time"
+                                value={config.horaInicioTarde}
+                                onChange={(e) => {
+                                  if (!configGlobal.usarConfigDiferenciada) {
+                                    setConfigGlobal({...configGlobal, horaInicioTarde: e.target.value});
+                                  } else {
+                                    setConfig({ horaInicioTarde: e.target.value });
+                                  }
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-semibold mb-1">Hora de Salida</label>
+                              <input
+                                type="time"
+                                value={config.horaTerminoTarde}
+                                onChange={(e) => {
+                                  if (!configGlobal.usarConfigDiferenciada) {
+                                    setConfigGlobal({...configGlobal, horaTerminoTarde: e.target.value});
+                                  } else {
+                                    setConfig({ horaTerminoTarde: e.target.value });
+                                  }
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Duración de Bloques */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-bold mb-3 text-gray-900">⏱️ Duración de Bloque (Hora Pedagógica)</h4>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="number"
+                            min="30"
+                            max="90"
+                            step="5"
+                            value={config.duracionBloque}
+                            onChange={(e) => {
+                              if (!configGlobal.usarConfigDiferenciada) {
+                                setConfigGlobal({...configGlobal, duracionBloque: parseInt(e.target.value)});
+                              } else {
+                                setConfig({ duracionBloque: parseInt(e.target.value) });
+                              }
+                            }}
+                            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold"
+                          />
+                          <span className="text-sm text-gray-600">minutos por bloque</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Recomendado: 45 minutos (estándar en Chile)</p>
+                      </div>
+                      
+                      {/* Recreos */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-bold text-gray-900">☕ Recreos</h4>
+                          <button
+                            onClick={() => {
+                              const nuevosRecreos = [...config.recreos, { nombre: `Recreo ${config.recreos.length + 1}`, despuesBloque: config.recreos.length + 2, duracion: 15 }];
+                              if (!configGlobal.usarConfigDiferenciada) {
+                                setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
+                              } else {
+                                setConfig({ recreos: nuevosRecreos });
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                          >
+                            + Agregar Recreo
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {config.recreos.map((recreo, idx) => (
+                            <div key={idx} className="bg-gray-50 p-3 rounded-lg flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={recreo.nombre}
+                                onChange={(e) => {
+                                  const nuevosRecreos = [...config.recreos];
+                                  nuevosRecreos[idx].nombre = e.target.value;
+                                  if (!configGlobal.usarConfigDiferenciada) {
+                                    setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
+                                  } else {
+                                    setConfig({ recreos: nuevosRecreos });
+                                  }
+                                }}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                              
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600 whitespace-nowrap">Después bloque:</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="10"
+                                  value={recreo.despuesBloque}
+                                  onChange={(e) => {
+                                    const nuevosRecreos = [...config.recreos];
+                                    nuevosRecreos[idx].despuesBloque = parseInt(e.target.value);
+                                    if (!configGlobal.usarConfigDiferenciada) {
+                                      setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
+                                    } else {
+                                      setConfig({ recreos: nuevosRecreos });
+                                    }
+                                  }}
+                                  className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm"
+                                />
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min="5"
+                                  max="60"
+                                  step="5"
+                                  value={recreo.duracion}
+                                  onChange={(e) => {
+                                    const nuevosRecreos = [...config.recreos];
+                                    nuevosRecreos[idx].duracion = parseInt(e.target.value);
+                                    if (!configGlobal.usarConfigDiferenciada) {
+                                      setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
+                                    } else {
+                                      setConfig({ recreos: nuevosRecreos });
+                                    }
+                                  }}
+                                  className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm"
+                                />
+                                <span className="text-xs text-gray-600">min</span>
+                              </div>
+                              
+                              <button
+                                onClick={() => {
+                                  const nuevosRecreos = config.recreos.filter((_, i) => i !== idx);
+                                  if (!configGlobal.usarConfigDiferenciada) {
+                                    setConfigGlobal({...configGlobal, recreos: nuevosRecreos});
+                                  } else {
+                                    setConfig({ recreos: nuevosRecreos });
+                                  }
+                                }}
+                                className="text-red-600 hover:text-red-800 p-2"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Vista previa */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-bold text-blue-900 mb-2">
+                          📊 Vista Previa {configGlobal.usarConfigDiferenciada ? `- ${tabActivo === 'basica' ? 'Básica' : 'Media'}` : ''}
+                        </h4>
+                        <div className="text-sm text-blue-800">
+                          <div className="mb-1">
+                            <strong>Bloques totales por día:</strong> {calcularBloquesTotales(config)} bloques
+                          </div>
+                          <div className="mb-1">
+                            <strong>Tiempo total:</strong> {calcularBloquesTotales(config) * config.duracionBloque} minutos pedagógicos
+                          </div>
+                          <div>
+                            <strong>Primer bloque:</strong> {calcularHoraBloque(0, config)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mb-1">
-                      <strong>Horas pedagógicas:</strong> {calcularBloquesTotales(configGlobal)} x {configGlobal.duracionBloque} min = {calcularBloquesTotales(configGlobal) * configGlobal.duracionBloque} minutos
-                    </div>
-                    <div>
-                      <strong>Ejemplo primer bloque:</strong> {calcularHoraBloque(0)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setMostrarModal(null);
-                    // Reiniciar horarios generados si hay cambios
-                    if (horariosGenerados) {
-                      if (confirm('Los cambios en la configuración requieren regenerar los horarios. ¿Deseas continuar?')) {
-                        setHorariosGenerados(null);
+                  );
+                })()}
+                
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setMostrarModal(null);
+                      if (horariosGenerados) {
+                        if (confirm('Los cambios requieren regenerar horarios. ¿Continuar?')) {
+                          setHorariosGenerados(null);
+                        }
                       }
-                    }
-                  }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold"
-                >
-                  Guardar Configuración
-                </button>
-                <button
-                  onClick={() => setMostrarModal(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold"
-                >
-                  Cancelar
-                </button>
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold"
+                  >
+                    Guardar Configuración
+                  </button>
+                  <button
+                    onClick={() => setMostrarModal(null)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
         
         {/* MODAL: Nuevo Docente */}
         {mostrarModal === 'nuevo-docente' && (
@@ -1459,7 +1657,7 @@ function App() {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h3 className="text-2xl font-bold">{itemSeleccionado.nombre}</h3>
-                  <p className="text-gray-500">Perfil del Curso</p>
+                  <p className="text-gray-500">Perfil del Curso - {itemSeleccionado.nivel === 'basica' ? 'Básica' : 'Media'}</p>
                 </div>
                 <button
                   onClick={() => setItemSeleccionado(null)}
@@ -1470,7 +1668,7 @@ function App() {
               </div>
               
               <div className="mb-6">
-                <h4 className="font-bold mb-3">Malla Curricular</h4>
+                <h4 className="font-bold mb-3">📚 Malla Curricular</h4>
                 <div className="space-y-2">
                   {asignaturas.map(asig => (
                     <div key={asig} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
@@ -1484,7 +1682,7 @@ function App() {
                           onChange={(e) => actualizarMallaCurso(itemSeleccionado.id, asig, e.target.value)}
                           className="w-16 px-2 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-500 outline-none"
                         />
-                        <span className="text-sm text-gray-500">horas/semana</span>
+                        <span className="text-sm text-gray-500">h/semana</span>
                       </div>
                     </div>
                   ))}
@@ -1503,10 +1701,10 @@ function App() {
                   Guardar Cambios
                 </button>
                 <button
-                  onClick={() => setItemSeleccionado(null)}
-                  className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 font-semibold"
+                  onClick={() => eliminarCurso(itemSeleccionado.id)}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold"
                 >
-                  Cerrar
+                  Eliminar Curso
                 </button>
               </div>
             </div>
