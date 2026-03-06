@@ -609,8 +609,12 @@ function App() {
           <div className="my-4 border-t border-gray-200"></div>
           
           <button
-            onClick={() => setMostrarModal('config-horario')}
-            className="w-full text-left px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+            onClick={() => setSeccionActual('config-horario')}
+            className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+              seccionActual === 'config-horario'
+                ? 'bg-blue-600 text-white font-semibold'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
           >
             ⚙️ Configurar Horario
           </button>
@@ -760,7 +764,6 @@ function App() {
             </div>
           </div>
         )}
-        
         {/* SECCIÓN: CURSOS */}
         {seccionActual === 'cursos' && (
           <div className="p-8">
@@ -836,7 +839,363 @@ function App() {
             )}
           </div>
         )}
-        
+{/* SECCIÓN: CONFIGURACIÓN DE HORARIO */}
+        {seccionActual === 'config-horario' && (
+          <div className="p-8">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Configuración de Horario</h2>
+                <p className="text-sm text-gray-500 mt-1">Ajusta los parámetros de jornada regular, JEC y recreos.</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+              
+              {/* Toggle Configuración Diferenciada */}
+              <div className="flex items-center pb-4 border-b border-gray-200">
+                <input 
+                  type="checkbox" 
+                  id="configDiferenciada"
+                  checked={configGlobal.usarConfigDiferenciada}
+                  onChange={(e) => setConfigGlobal({...configGlobal, usarConfigDiferenciada: e.target.checked})}
+                  className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                />
+                <label htmlFor="configDiferenciada" className="ml-3 text-md font-medium text-gray-900 cursor-pointer">
+                  Usar horarios diferentes para Educación Básica y Media
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* ========================================== */}
+                {/* HORARIO GENERAL O BÁSICA                   */}
+                {/* ========================================== */}
+                <div className="p-5 border border-gray-200 rounded-lg bg-gray-50 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+                    {configGlobal.usarConfigDiferenciada ? "Horario - Ed. Básica" : "Horario General"}
+                  </h3>
+                  
+                  {/* MAÑANA */}
+                  <h4 className="text-sm font-bold text-gray-600 mb-2 uppercase">Jornada Mañana</h4>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Entrada</label>
+                      <input 
+                        type="time" 
+                        value={configGlobal.usarConfigDiferenciada ? configGlobal.basica.horaInicioManana : configGlobal.horaInicioManana}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setConfigGlobal(prev => prev.usarConfigDiferenciada 
+                            ? { ...prev, basica: { ...prev.basica, horaInicioManana: val } }
+                            : { ...prev, horaInicioManana: val }
+                          );
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Salida</label>
+                      <input 
+                        type="time" 
+                        value={configGlobal.usarConfigDiferenciada ? configGlobal.basica.horaTerminoManana : configGlobal.horaTerminoManana}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setConfigGlobal(prev => prev.usarConfigDiferenciada 
+                            ? { ...prev, basica: { ...prev.basica, horaTerminoManana: val } }
+                            : { ...prev, horaTerminoManana: val }
+                          );
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* TOGGLE TARDE (JEC) */}
+                  <div className="flex items-center my-4 py-3 border-t border-b border-gray-200">
+                    <input 
+                      type="checkbox" 
+                      checked={configGlobal.usarConfigDiferenciada ? configGlobal.basica.tieneTarde : configGlobal.tieneTarde}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setConfigGlobal(prev => prev.usarConfigDiferenciada 
+                          ? { ...prev, basica: { ...prev.basica, tieneTarde: val } }
+                          : { ...prev, tieneTarde: val }
+                        );
+                      }}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded cursor-pointer"
+                    />
+                    <span className="ml-2 text-sm font-bold text-gray-800">Habilitar Jornada Tarde (JEC)</span>
+                  </div>
+
+                  {/* TARDE */}
+                  {(configGlobal.usarConfigDiferenciada ? configGlobal.basica.tieneTarde : configGlobal.tieneTarde) && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-bold text-gray-600 mb-2 uppercase">Jornada Tarde</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Entrada</label>
+                          <input 
+                            type="time" 
+                            value={configGlobal.usarConfigDiferenciada ? configGlobal.basica.horaInicioTarde : configGlobal.horaInicioTarde}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setConfigGlobal(prev => prev.usarConfigDiferenciada 
+                                ? { ...prev, basica: { ...prev.basica, horaInicioTarde: val } }
+                                : { ...prev, horaInicioTarde: val }
+                              );
+                            }}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Salida</label>
+                          <input 
+                            type="time" 
+                            value={configGlobal.usarConfigDiferenciada ? configGlobal.basica.horaTerminoTarde : configGlobal.horaTerminoTarde}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setConfigGlobal(prev => prev.usarConfigDiferenciada 
+                                ? { ...prev, basica: { ...prev.basica, horaTerminoTarde: val } }
+                                : { ...prev, horaTerminoTarde: val }
+                              );
+                            }}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BLOQUES */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Duración de Bloques (min)</label>
+                    <input 
+                      type="number" 
+                      value={configGlobal.usarConfigDiferenciada ? configGlobal.basica.duracionBloque : configGlobal.duracionBloque}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        setConfigGlobal(prev => prev.usarConfigDiferenciada 
+                          ? { ...prev, basica: { ...prev.basica, duracionBloque: val } }
+                          : { ...prev, duracionBloque: val }
+                        );
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white outline-none"
+                    />
+                  </div>
+
+                  {/* RECREOS BÁSICA / GENERAL */}
+                  <div className="mt-6 pt-4 border-t border-gray-300">
+                    <h4 className="text-sm font-bold text-gray-600 mb-3 uppercase">Recreos (Bloques no disponibles)</h4>
+                    <div className="space-y-3">
+                      {(configGlobal.usarConfigDiferenciada ? configGlobal.basica.recreos : configGlobal.recreos).map((recreo, index) => (
+                        <div key={`rec-basica-${index}`} className="grid grid-cols-12 gap-2 items-center bg-white p-2 border border-gray-200 rounded shadow-sm">
+                          <div className="col-span-5">
+                            <label className="block text-xs text-gray-500 mb-1">Nombre</label>
+                            <input 
+                              type="text" 
+                              value={recreo.nombre}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setConfigGlobal(prev => {
+                                  const targetNivel = prev.usarConfigDiferenciada ? 'basica' : 'general';
+                                  const recreosClonados = prev.usarConfigDiferenciada ? [...prev.basica.recreos] : [...prev.recreos];
+                                  recreosClonados[index] = { ...recreosClonados[index], nombre: val };
+                                  
+                                  return prev.usarConfigDiferenciada 
+                                    ? { ...prev, basica: { ...prev.basica, recreos: recreosClonados } }
+                                    : { ...prev, recreos: recreosClonados };
+                                });
+                              }}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm outline-none"
+                            />
+                          </div>
+                          <div className="col-span-4">
+                            <label className="block text-xs text-gray-500 mb-1">Tras bloque</label>
+                            <input 
+                              type="number" min="1"
+                              value={recreo.despuesBloque}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 1;
+                                setConfigGlobal(prev => {
+                                  const recreosClonados = prev.usarConfigDiferenciada ? [...prev.basica.recreos] : [...prev.recreos];
+                                  recreosClonados[index] = { ...recreosClonados[index], despuesBloque: val };
+                                  return prev.usarConfigDiferenciada 
+                                    ? { ...prev, basica: { ...prev.basica, recreos: recreosClonados } }
+                                    : { ...prev, recreos: recreosClonados };
+                                });
+                              }}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm outline-none"
+                            />
+                          </div>
+                          <div className="col-span-3">
+                            <label className="block text-xs text-gray-500 mb-1">Minutos</label>
+                            <input 
+                              type="number" min="5" step="5"
+                              value={recreo.duracion}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 5;
+                                setConfigGlobal(prev => {
+                                  const recreosClonados = prev.usarConfigDiferenciada ? [...prev.basica.recreos] : [...prev.recreos];
+                                  recreosClonados[index] = { ...recreosClonados[index], duracion: val };
+                                  return prev.usarConfigDiferenciada 
+                                    ? { ...prev, basica: { ...prev.basica, recreos: recreosClonados } }
+                                    : { ...prev, recreos: recreosClonados };
+                                });
+                              }}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm outline-none"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ========================================== */}
+                {/* HORARIO MEDIA                              */}
+                {/* ========================================== */}
+                {configGlobal.usarConfigDiferenciada && (
+                  <div className="p-5 border border-blue-200 rounded-lg bg-blue-50 shadow-sm transition-all duration-300">
+                    <h3 className="text-lg font-bold text-blue-800 mb-4 border-b border-blue-200 pb-2">
+                      Horario - Ed. Media
+                    </h3>
+                    
+                    {/* MAÑANA MEDIA */}
+                    <h4 className="text-sm font-bold text-blue-600 mb-2 uppercase">Jornada Mañana</h4>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-blue-700 mb-1">Entrada</label>
+                        <input 
+                          type="time" 
+                          value={configGlobal.media.horaInicioManana}
+                          onChange={(e) => setConfigGlobal(prev => ({ ...prev, media: { ...prev.media, horaInicioManana: e.target.value } }))}
+                          className="w-full px-4 py-2 border border-blue-300 rounded-lg bg-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-blue-700 mb-1">Salida</label>
+                        <input 
+                          type="time" 
+                          value={configGlobal.media.horaTerminoManana}
+                          onChange={(e) => setConfigGlobal(prev => ({ ...prev, media: { ...prev.media, horaTerminoManana: e.target.value } }))}
+                          className="w-full px-4 py-2 border border-blue-300 rounded-lg bg-white outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* TOGGLE TARDE MEDIA (JEC) */}
+                    <div className="flex items-center my-4 py-3 border-t border-b border-blue-200">
+                      <input 
+                        type="checkbox" 
+                        checked={configGlobal.media.tieneTarde}
+                        onChange={(e) => setConfigGlobal(prev => ({ ...prev, media: { ...prev.media, tieneTarde: e.target.checked } }))}
+                        className="w-4 h-4 text-blue-600 bg-white border-blue-300 rounded cursor-pointer"
+                      />
+                      <span className="ml-2 text-sm font-bold text-blue-800">Habilitar Jornada Tarde (JEC)</span>
+                    </div>
+
+                    {/* TARDE MEDIA */}
+                    {configGlobal.media.tieneTarde && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-bold text-blue-600 mb-2 uppercase">Jornada Tarde</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-blue-700 mb-1">Entrada</label>
+                            <input 
+                              type="time" 
+                              value={configGlobal.media.horaInicioTarde}
+                              onChange={(e) => setConfigGlobal(prev => ({ ...prev, media: { ...prev.media, horaInicioTarde: e.target.value } }))}
+                              className="w-full px-4 py-2 border border-blue-300 rounded-lg bg-white outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-blue-700 mb-1">Salida</label>
+                            <input 
+                              type="time" 
+                              value={configGlobal.media.horaTerminoTarde}
+                              onChange={(e) => setConfigGlobal(prev => ({ ...prev, media: { ...prev.media, horaTerminoTarde: e.target.value } }))}
+                              className="w-full px-4 py-2 border border-blue-300 rounded-lg bg-white outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* BLOQUES MEDIA */}
+                    <div className="mt-4 pt-4 border-t border-blue-200">
+                      <label className="block text-sm font-semibold text-blue-700 mb-1">Duración de Bloques (min)</label>
+                      <input 
+                        type="number" 
+                        value={configGlobal.media.duracionBloque}
+                        onChange={(e) => setConfigGlobal(prev => ({ ...prev, media: { ...prev.media, duracionBloque: parseInt(e.target.value) || 0 } }))}
+                        className="w-full px-4 py-2 border border-blue-300 rounded-lg bg-white outline-none"
+                      />
+                    </div>
+
+                    {/* RECREOS MEDIA */}
+                    <div className="mt-6 pt-4 border-t border-blue-200">
+                      <h4 className="text-sm font-bold text-blue-600 mb-3 uppercase">Recreos (Bloques no disponibles)</h4>
+                      <div className="space-y-3">
+                        {configGlobal.media.recreos.map((recreo, index) => (
+                          <div key={`rec-media-${index}`} className="grid grid-cols-12 gap-2 items-center bg-white p-2 border border-blue-100 rounded shadow-sm">
+                            <div className="col-span-5">
+                              <label className="block text-xs text-blue-500 mb-1">Nombre</label>
+                              <input 
+                                type="text" 
+                                value={recreo.nombre}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setConfigGlobal(prev => {
+                                    const recreosClonados = [...prev.media.recreos];
+                                    recreosClonados[index] = { ...recreosClonados[index], nombre: val };
+                                    return { ...prev, media: { ...prev.media, recreos: recreosClonados } };
+                                  });
+                                }}
+                                className="w-full px-2 py-1 border border-blue-200 rounded text-sm outline-none"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <label className="block text-xs text-blue-500 mb-1">Tras bloque</label>
+                              <input 
+                                type="number" min="1"
+                                value={recreo.despuesBloque}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 1;
+                                  setConfigGlobal(prev => {
+                                    const recreosClonados = [...prev.media.recreos];
+                                    recreosClonados[index] = { ...recreosClonados[index], despuesBloque: val };
+                                    return { ...prev, media: { ...prev.media, recreos: recreosClonados } };
+                                  });
+                                }}
+                                className="w-full px-2 py-1 border border-blue-200 rounded text-sm outline-none"
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <label className="block text-xs text-blue-500 mb-1">Minutos</label>
+                              <input 
+                                type="number" min="5" step="5"
+                                value={recreo.duracion}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 5;
+                                  setConfigGlobal(prev => {
+                                    const recreosClonados = [...prev.media.recreos];
+                                    recreosClonados[index] = { ...recreosClonados[index], duracion: val };
+                                    return { ...prev, media: { ...prev.media, recreos: recreosClonados } };
+                                  });
+                                }}
+                                className="w-full px-2 py-1 border border-blue-200 rounded text-sm outline-none"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {/* SECCIÓN: GENERADOR */}
         {seccionActual === 'generador' && (
           <div className="p-8">
